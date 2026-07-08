@@ -1,0 +1,502 @@
+
+# Hackathon Spec: Agentic AI-Powered Dynamic Production Scheduling
+
+## Problem Statement
+
+When a catastrophic event forces an unplanned shutdown of a manufacturing plant, the Production Planner must rapidly assess impact, reallocate production across facilities, and communicate with customers — all under extreme time pressure. Today, this process is manual, error-prone, and slow, involving dozens of spreadsheets, calls, and siloed systems.
+
+**Challenge:** How can Agentic AI collaborate with human decision-makers to orchestrate a cross-plant production reallocation in hours instead of days?
+
+---
+
+## Scenario
+
+- **Company:** ABC Steel Corporation (Stainless Steel Sheet Manufacturing)
+- **Product:** Stainless Steel Rolled Alloys — sheets of varying gauges (e.g., 36 Gauge, 24 Gauge, 18 Gauge)
+- **Process:** Raw stainless steel alloy is rolled to reduce thickness to the target gauge, then cut to customer-specified lengths
+- **Plants:** Columbus, OH (Plant A) | Miami, FL (Plant B)
+- **Event:** Category 5 tornado — Miami plant shut down for 2–4 weeks
+- **User Persona:** Mr. John, Production Planner
+
+---
+
+## Solution Overview: "DisruptionAI" — An Agentic AI Co-Pilot
+
+An AI-powered disruption management co-pilot that works **with** the Planner through a conversational, multi-step workflow. The AI understands the Planner's goal (minimize customer impact, maximize order fulfillment), uses tools to gather data, reasons through multi-constraint trade-offs, adapts when the Planner changes constraints, and proactively surfaces insights — all while keeping the human in control at every critical decision point.
+
+---
+
+## What Makes This "Agentic" (Not Just a Workflow)
+
+- **Reasoning:** The agent doesn't just return data — it explains *why* it recommends each action, weighing trade-offs across multiple constraints in natural language
+- **Adaptability:** When the Planner pushes back, changes a constraint, or asks "what if," the agent re-plans on the fly without restarting the workflow
+- **Proactivity:** The agent surfaces insights and suggestions the Planner didn't explicitly ask for — connecting dots across data points
+- **Multi-Constraint Intelligence:** The agent manages 4 constraint layers simultaneously (equipment, material, machine utilization, cascade impact) — something no human planner can do in real-time across plants
+
+---
+
+## Manufacturing Context
+
+**Single Raw Material:** Stainless Steel Rolled Alloys
+- Differentiated by **gauge** (thickness): 36 Gauge, 24 Gauge, 18 Gauge, 14 Gauge, etc.
+- Each production order specifies a target gauge and length
+
+**Two Machine Types:**
+- **Rolling Mill:** Reduces raw stainless steel sheet thickness to the target gauge
+- **Cutter:** Cuts rolled sheets to customer-specified lengths
+
+**Production Flow:** Raw Alloy → Rolling Mill (reduce to target gauge) → Cutter (cut to length) → Finished Product
+
+**Operators:** All operators are interchangeable — no skill certification differentiation. The only manpower constraint is **headcount availability** across shifts (normal, overtime, weekend).
+
+---
+
+## Workflow & Agent Design
+
+### Phase 0: Disruption Detection & Alert (Lean — Agent-Driven, Planner-Confirmed)
+
+**Agent Action:**
+- Detect Category 5 tornado heading toward Miami via external data source (mock weather API)
+- Correlate event with ABC Steel's Miami plant location
+- Send proactive alert: *"⚠️ Category 5 tornado projected to impact Miami plant within 24 hours. Estimated shutdown: 2–4 weeks. X open production orders at risk. Shall I begin impact assessment?"*
+
+**Human Touchpoint:** Planner confirms and triggers the workflow
+
+**Agentic Behavior:** The agent *initiates* — it doesn't wait to be asked. It correlates an external event with internal data autonomously.
+
+---
+
+### Phase 1: Impact Assessment (Lean — Agent-Driven, Planner-Reviewed)
+
+**Agent Action:**
+- Query Miami plant's open production orders with delivery deadlines ≤ 4 weeks
+- Classify orders by priority: **Critical** (contractual penalties/key accounts), **High**, **Medium**, **Low**
+
+**Output Data Points:**
+- SKU (e.g., SS-36G-48L = Stainless Steel, 36 Gauge, 48-inch length)
+- Customer Name
+- Production Order ID
+- Priority (Critical / High / Medium / Low)
+- Penalty Risk
+- Committed Delivery Date
+- Required Gauge (thickness)
+- Required Length
+- Required Quantity (tons)
+- Required Machine Types (Rolling Mill + Cutter)
+- Estimated Production Hours (Rolling Mill hours + Cutter hours)
+
+**Human Touchpoint:** Planner reviews the prioritized list and confirms/adjusts priority classifications
+
+**Agentic Behavior:**
+- Agent explains its classification logic: *"Order #1042 is Critical — $50K penalty clause, deadline in 10 days."*
+- If Planner reclassifies an order, agent acknowledges and carries the change forward into Phase 3
+
+---
+
+### Phase 2: Ohio Capacity Analysis (Supports Phase 3 — Agent-Driven, Planner-Reviewed)
+
+**Agent Action:** Assess Ohio plant's current capacity across the following dimensions that feed directly into Phase 3's constraint matching:
+
+**Dimension 1 — Equipment Capability:**
+- Machine types at Ohio: Rolling Mill, Cutter
+- Gauge range each Rolling Mill can produce (e.g., Ohio Rolling Mill handles 14–36 Gauge)
+- Cutter length range (e.g., Ohio Cutter handles up to 72-inch lengths)
+
+**Dimension 2 — Machine Utilization:**
+- Per machine type (Rolling Mill, Cutter):
+  - Planned Downtime (Hours/Week)
+  - Current Utilization % / Normal Shift
+  - Availability % / Overtime Shift
+  - Availability % / Weekend Shift
+  - Total available hours per week (Normal + Overtime + Weekend minus Downtime)
+
+**Dimension 3 — Manpower (Headcount):**
+- Total operators available
+- Currently allocated to active Ohio orders
+- Available for overtime (Hours/Shift)
+- Weekend shift availability (Hours/Shift)
+- All operators are interchangeable — no skill differentiation
+
+**Dimension 4 — Raw Material (Stainless Steel Rolled Alloys):**
+- Current Inventory (tons)
+- Committed to existing Ohio orders (tons)
+- Available surplus (Current minus Committed)
+- Procurement Lead Time (days)
+
+**Dimension 5 — Existing Ohio Order Load:**
+- All active Ohio production orders with: Order ID, SKU, Priority, Deadline, Required Gauge, Required Length, Required Quantity, Required Rolling Mill Hours, Required Cutter Hours, Slack (days between estimated completion and deadline)
+
+**Agent Action:** Calculate **total available surplus capacity** across all dimensions and identify the **primary bottleneck**
+
+**Human Touchpoint:** Planner reviews capacity snapshot and flags any known constraints (e.g., upcoming maintenance, overtime limits)
+
+**Agentic Behavior:**
+- Agent interprets the data: *"Ohio has 185 surplus machine hours/week total, but the Rolling Mill is the bottleneck — only 45 surplus hours there vs. 140 on the Cutter. Since every Miami order needs both Rolling Mill AND Cutter time, the Rolling Mill constrains how many orders we can absorb."*
+- If Planner adds a constraint (e.g., *"No weekend shifts — union rules"*), agent recalculates immediately
+
+---
+
+### Phase 3: Multi-Constraint Reallocation Engine (THE CORE — Agent-Driven, Planner-Approved)
+
+This is the centerpiece of the demo. The agent processes Miami orders through a **4-layer constraint funnel**, reasoning through trade-offs at each layer, and engages the Planner in an interactive conversation as it builds the reallocation plan.
+
+---
+
+#### Step 1: Free Up Capacity at Ohio Plant
+
+**Agent Action:**
+- Query Ohio plant's production orders with **Low priority** and **delivery deadline > 6 weeks**
+- For each candidate, calculate:
+  - Capacity freed (Rolling Mill hours, Cutter hours, raw material released, operator hours freed)
+  - Remaining buffer after delay (deadline minus new estimated completion)
+- Present candidates to Planner with trade-off reasoning
+
+**Agent Reasoning Example:**
+*"I found 4 Ohio orders that could be delayed to free up capacity:*
+- *Order #2015: Frees 30 Rolling Mill hours + 20 Cutter hours + 500 tons alloy. Deadline is 8 weeks out — 2-week buffer remains after delay.*
+- *Order #2018: Frees 20 Rolling Mill hours + 15 Cutter hours + 300 tons alloy. Deadline is 10 weeks out — 4-week buffer remains.*
+- *Order #2021: Frees 15 Rolling Mill hours + 10 Cutter hours + 200 tons alloy. Deadline is 7 weeks out — only 1-week buffer after delay. Riskier.*
+- *Order #2024: Frees 10 Rolling Mill hours + 8 Cutter hours. Deadline is 9 weeks out — 3-week buffer.*
+
+*Recommend delaying #2015, #2018, and #2024. #2021 is borderline — the 1-week buffer is tight. Your call."*
+
+**Human Touchpoint:** Planner approves/rejects each delay
+
+**Agentic Behavior:**
+- If Planner rejects a delay (e.g., *"Don't delay #2015 — strategic customer"*), agent immediately recalculates: *"Understood. Without #2015, we lose 30 Rolling Mill hours and 500 tons of alloy from the surplus. This will reduce the number of Miami orders we can absorb. I'll factor this into the matching step."*
+- Agent doesn't restart — it carries the updated constraint forward
+
+---
+
+#### Step 2: Recalculate Ohio Capacity Post-Delay
+
+**Agent Action:**
+- Re-run capacity calculation with approved delays removed from Ohio's production schedule
+- Output updated surplus across all dimensions
+- Show before/after comparison
+
+**Agent Reasoning Example:**
+*"After delaying 3 Ohio orders, here's the updated surplus:*
+- *Rolling Mill hours: 45 → 75/week (+30 from delayed orders)*
+- *Cutter hours: 140 → 163/week (+23)*
+- *Stainless Steel Alloy inventory: 800 tons → 1,300 tons surplus (+500)*
+- *Operators available: 8 → 11 (+3 freed from delayed orders)*
+
+*Primary bottleneck is still Rolling Mill hours at 75 hrs/week. Let's see how many Miami orders that supports."*
+
+---
+
+#### Step 3: Multi-Constraint Matching (The Core Intelligence)
+
+The agent processes each Miami order through a **4-layer constraint funnel**. Orders must pass ALL layers to be transferable. The agent walks the Planner through this interactively.
+
+**Layer 1 — Equipment Compatibility Filter:**
+- Check: Can Ohio's Rolling Mill produce the required gauge? Can Ohio's Cutter handle the required length?
+- Result: Pass or Fail
+- Agent: *"Order #1089 requires 10 Gauge sheet. Ohio's Rolling Mill handles 14–36 Gauge only. This order is non-transferable — equipment mismatch. Ohio's mill can't roll that thick."*
+
+**Layer 2 — Raw Material Availability Check:**
+- Check: Does Ohio have sufficient Stainless Steel Rolled Alloy surplus (in tons) to produce this order?
+- Three outcomes:
+  - **Full Match:** Surplus inventory ≥ required quantity → Proceed
+  - **Partial Match:** Surplus inventory < required quantity, but procurement lead time + production time ≤ deadline → Proceed with procurement
+  - **No Match:** Surplus insufficient AND procurement lead time exceeds deadline → Non-transferable
+- Agent: *"Order #1055 needs 150 tons of alloy. Ohio surplus is 90 tons. Remaining 60 tons can be procured in 5 days. Deadline is 18 days out. Production takes ~8 days. Total: 13 days. Fits within deadline with 5 days buffer. This is a Partial Match."*
+
+**Layer 3 — Machine Utilization Check:**
+- Check: Does Ohio have enough available hours on BOTH Rolling Mill AND Cutter to produce this order?
+- The agent checks across shift types in order: Normal → Overtime → Weekend
+- **Running capacity tracker updates** after each order is proposed:
+  - *"After transferring Order #1042 (requires 25 Rolling Mill hours + 15 Cutter hours): Rolling Mill utilization goes from 52% to 85% on normal shifts. Cutter utilization goes from 30% to 41%."*
+  - *"After transferring Order #1055 (requires 20 Rolling Mill hours + 12 Cutter hours): Rolling Mill utilization would reach 97% on normal shifts. ⚠️ Exceeds 90% threshold. However, overtime shifts have 30 Rolling Mill hours available. Recommend scheduling #1055 on overtime. Rolling Mill overtime utilization would be 67%."*
+- **Threshold alerts** at 90%: Agent flags and suggests alternatives (shift to overtime, shift to weekend, or skip this order)
+- **Manpower check embedded here:** Agent also verifies enough operators are available for the shift type being proposed. *"Scheduling #1055 on overtime requires 3 operators. 4 are available for overtime. We're fine."*
+
+**Layer 4 — Cascade Impact Check (The Differentiator):**
+- Check: If this Miami order is added to Ohio's schedule, does it push any existing Ohio order past its committed delivery date?
+- The agent simulates the updated schedule and checks each existing Ohio order's slack:
+  - *"Transferring Order #1042 consumes 25 Rolling Mill hours. This pushes Ohio Order #2022's estimated completion from Day 12 to Day 14. Ohio Order #2022's deadline is Day 18 — still 4 days of slack. No cascade impact."*
+  - *"However, transferring Order #1055 as well would push Ohio Order #2022 to Day 17 — only 1 day of slack. And Ohio Order #2025 would be pushed to Day 21, which is 2 days PAST its deadline. ⚠️ Ohio Order #2025 has a penalty clause. Transferring #1055 would cause a penalty on an existing Ohio order."*
+- This is the constraint that ERP systems completely miss — and the most powerful demo moment
+
+---
+
+#### Step 3 Interaction Pattern (How the Demo Flows):
+
+The agent walks through orders **in priority order** (Critical first), and after each order, updates the running state:
+
+> **Agent:** *"Let's work through your Critical orders first. There are 5.*
+>
+> *Order #1042 — SKU: SS-36G-48L, 200 tons, Customer: Acme Corp, Deadline: 10 days*
+> ✅ Equipment: 36 Gauge within Ohio Rolling Mill range (14–36G). 48-inch length within Cutter range.
+> ✅ Raw Material: Full Match — Ohio has 200 tons surplus alloy
+> ✅ Machine: 25 Rolling Mill hrs + 15 Cutter hrs needed. Rolling Mill utilization goes to 85%. Cutter to 41%. Both within threshold.
+> ✅ Manpower: 3 operators needed, 11 available. Fine.
+> ✅ Cascade: No existing Ohio orders impacted
+> **Recommendation: Transfer. Approve?**
+
+> **Planner:** *"Approved."*
+
+> **Agent:** *"Done. Updated Ohio state: Rolling Mill utilization 85%, Cutter 41%, Alloy surplus down to 1,100 tons, 8 operators available.*
+>
+> *Next — Order #1055 — SKU: SS-24G-60L, 150 tons, Customer: Beta Industries, Deadline: 18 days*
+> ✅ Equipment: 24 Gauge within range. 60-inch length within Cutter range.
+> ⚠️ Raw Material: Partial Match — 90 tons surplus, need to procure 60 tons (5-day lead time). Fits within deadline.
+> ⚠️ Machine: 20 Rolling Mill hrs needed. Rolling Mill utilization would reach 97% on normal shifts. Exceeds 90% threshold. Recommend scheduling on overtime — overtime utilization would be 67%.
+> ✅ Manpower: 3 operators needed on overtime. 4 available for overtime.
+> ⚠️ Cascade: Pushes Ohio Order #2022 completion by 2 days. #2022 still has 4 days slack. Acceptable.
+> **Recommendation: Transfer with procurement + overtime scheduling. Approve?**
+
+> **Planner:** *"What if I skip this one and come back to it?"*
+
+> **Agent:** *"If we skip #1055, we preserve 90 tons of alloy surplus and 20 Rolling Mill hours on normal shifts. The next Critical order is #1067 — SS-36G-36L, 80 tons. Ohio can fully cover that one on normal shifts without procurement. Want to evaluate #1067 first?"*
+
+> **Planner:** *"Yes, let's do #1067 first."*
+
+> **Agent:** *[Evaluates #1067 through all 4 layers...]*
+
+---
+
+#### Step 3 — What-If Support:
+
+At any point during the matching conversation, the Planner can ask what-if questions:
+
+> **Planner:** *"What if I authorize weekend shifts for the next 3 weeks?"*
+
+> **Agent:** *"With weekend shifts, we gain 40 additional Rolling Mill hours/week and 35 Cutter hours/week. This allows us to absorb 2 more Miami orders that were previously blocked by Rolling Mill utilization — Orders #1078 and #1061. Rolling Mill utilization on weekends would be at 75%. Want me to include them in the transfer plan?"*
+
+> **Planner:** *"What if Miami reopens in 2 weeks instead of 4?"*
+
+> **Agent:** *"If Miami reopens in 2 weeks, 5 of the 12 at-risk orders have deadlines in weeks 3–4. Those can wait for Miami to come back online. That reduces our transfer need from 12 to 7 orders. With the current Ohio capacity, we can handle all 7 without needing overtime or weekend shifts. Want me to re-run the matching with just those 7?"*
+
+---
+
+#### Step 4: Identify Non-Transferable Orders & Customer Communications
+
+**Agent Action:**
+- All Miami orders that failed at any constraint layer are flagged as **Non-Transferable**
+- For each, the agent states the **specific constraint that blocked it**:
+  - *"Order #1089: Non-transferable — Equipment mismatch (requires 10 Gauge, Ohio Rolling Mill only handles 14–36 Gauge)"*
+  - *"Order #1078: Non-transferable — Would push Ohio Order #2025 past its penalty deadline (cascade impact)"*
+  - *"Order #1092: Non-transferable — Alloy surplus insufficient (needs 400 tons, only 150 available) and procurement lead time (10 days) plus production time (12 days) exceeds 18-day deadline"*
+- Draft context-aware customer communications for each
+
+**Human Touchpoint:** Planner reviews and approves all customer communications before sending
+
+**Agentic Behavior:**
+- Agent groups orders by customer: *"Orders #1042, #1055, and #1067 are all for Delta Construction. I've drafted a single consolidated communication instead of 3 separate notices."*
+
+---
+
+### Phase 4: Execution (To Be Refined Later)
+
+**Agent Action — For Transferable Orders:**
+- Create new production orders at Ohio plant
+- Assign to appropriate Rolling Mill and Cutter schedules
+- Verify raw material allocation
+- Generate updated production schedule
+
+**Agent Action — For Delayed/Cancelled Orders:**
+- Draft customer notification emails (delay notice with new ETA or cancellation notice)
+- Prepare internal communication for plant managers
+
+**Agent Action — For Delayed Ohio Orders:**
+- Update Ohio production schedule
+- Draft customer delay notifications for affected Ohio customers
+
+**Agent Action — Plant Manager Handoff:**
+- Generate a Production Reallocation Brief for the Ohio Plant Manager
+- Send the brief (mock notification) and track acknowledgment
+
+**Human Touchpoint:** Planner reviews and approves all orders and communications before execution
+
+---
+
+## Human-AI Collaboration Design Principles
+
+| Principle | Implementation |
+|-----------|---------------|
+| **AI Proposes, Human Disposes** | Every recommendation requires explicit Planner approval before execution |
+| **Transparent Reasoning** | Agent explains each recommendation with specific constraint data across all 4 layers |
+| **Adaptive Re-Planning** | When Planner rejects a recommendation, changes a constraint, or asks what-if, the agent re-optimizes on the fly |
+| **Conversational Interaction** | Planner interacts via natural language — challenges recommendations, skips orders, reorders evaluation, explores scenarios |
+| **Proactive Intelligence** | Agent surfaces insights: same-customer grouping, threshold warnings, cascade risks |
+| **Audit Trail** | Every decision (human or AI) is logged with timestamp and rationale |
+
+---
+
+## Mock Data Schema
+
+### Production Orders (Miami & Ohio)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| order_id | String | Unique production order ID |
+| plant | String | "Miami" or "Ohio" |
+| sku | String | e.g., SS-36G-48L (Stainless Steel, 36 Gauge, 48-inch length) |
+| customer_name | String | Customer name |
+| priority | String | Critical / High / Medium / Low |
+| penalty_risk | String | Dollar amount or "None" |
+| committed_delivery_date | Date | Customer-committed deadline |
+| required_gauge | Number | Target gauge (e.g., 36, 24, 18, 14) |
+| required_length_inches | Number | Cut length in inches |
+| required_qty_tons | Number | Quantity in tons |
+| rolling_mill_hours | Number | Estimated Rolling Mill production hours |
+| cutter_hours | Number | Estimated Cutter production hours |
+| status | String | Active / Delayed / Transferred / Cancelled |
+
+### Ohio Plant Capacity — Machines
+
+| Field | Type | Description |
+|-------|------|-------------|
+| machine_type | String | Rolling Mill / Cutter |
+| gauge_range_min | Number | Minimum gauge (Rolling Mill only) |
+| gauge_range_max | Number | Maximum gauge (Rolling Mill only) |
+| max_cut_length_inches | Number | Maximum cut length (Cutter only) |
+| planned_downtime_hrs_week | Number | Scheduled maintenance hours per week |
+| utilization_pct_normal | Number | Current utilization % on normal shifts |
+| availability_pct_overtime | Number | Availability % on overtime shifts |
+| availability_pct_weekend | Number | Availability % on weekend shifts |
+| total_available_hrs_week | Number | Total available hours per week |
+
+### Ohio Plant Capacity — Manpower
+
+| Field | Type | Description |
+|-------|------|-------------|
+| total_operators | Number | Total headcount |
+| currently_allocated | Number | Operators assigned to active Ohio orders |
+| available_surplus | Number | Total minus Allocated |
+| overtime_hrs_per_shift | Number | Available overtime hours per shift |
+| weekend_hrs_per_shift | Number | Available weekend hours per shift |
+
+### Ohio Plant Capacity — Raw Material
+
+| Field | Type | Description |
+|-------|------|-------------|
+| material_name | String | "Stainless Steel Rolled Alloy" |
+| current_inventory_tons | Number | Total inventory |
+| committed_to_orders_tons | Number | Allocated to active Ohio orders |
+| available_surplus_tons | Number | Current minus Committed |
+| procurement_lead_time_days | Number | Days to procure additional stock |
+
+---
+
+## Engineering Work Packages
+
+The following are grouped by functional area. The team has flexibility on sequencing and implementation approach.
+
+### Work Package 1: Mock Data Layer
+
+Build the mock ERP dataset that all agent tools will query against.
+
+- Design and populate the Production Orders table (15–20 Miami orders, 15–20 Ohio orders) with variety in gauges (36G, 24G, 18G, 14G, and at least one out-of-range like 10G), lengths, quantities, and priorities
+- Design and populate Ohio Machines capacity table (Rolling Mill + Cutter) with gauge/length ranges and utilization data across shift types
+- Design and populate Ohio Manpower table (single interchangeable operator pool)
+- Design and populate Ohio Raw Material table (single material: Stainless Steel Rolled Alloy)
+- Ensure mock data includes edge cases: at least 1 gauge out-of-range (equipment mismatch), 2 partial raw material matches, 1 cascade impact scenario where transferring a Miami order would breach an existing Ohio order's deadline, 1 length exceeding Cutter range
+
+### Work Package 2: Agent Framework & System Prompt
+
+Set up the agentic AI backbone.
+
+- Set up the Agentic AI framework (Bedrock Agents or equivalent)
+- Define tool/action group interfaces for: query orders, check capacity, run constraint matching, create orders, send notifications
+- Configure agent system prompt with: Planner persona understanding, steel manufacturing domain knowledge, 4-layer constraint funnel logic, reasoning instructions (explain trade-offs, adapt to constraint changes, surface proactive insights), and adaptive re-planning behavior
+- The system prompt is the most critical engineering artifact — it encodes *how* the agent reasons, not just *what tools to call*
+
+### Work Package 3: Phase 0 & Phase 1 — Alert & Impact Assessment
+
+Build the lean opening phases.
+
+- Implement Phase 0: Mock weather/disruption alert → correlate with Miami plant → generate proactive notification with at-risk order count → ask Planner to confirm
+- Implement Phase 1: Query Miami orders with deadline ≤ 4 weeks, classify by priority (Critical/High/Medium/Low based on penalty risk and delivery urgency), return structured table with all output data points
+- Agent must explain its priority classification logic in natural language
+- Agent must handle Planner reclassification — acknowledge the change and carry it forward into Phase 3
+
+### Work Package 4: Phase 2 — Capacity Analysis
+
+Build the Ohio capacity assessment that feeds Phase 3.
+
+- Query all Ohio capacity dimensions: equipment capability (gauge/length ranges), machine utilization across shift types, manpower headcount, raw material inventory and surplus
+- Calculate total surplus capacity across all dimensions
+- Identify and communicate the primary bottleneck in natural language (e.g., "Rolling Mill is the constraint, not the Cutter")
+- Handle Planner-added constraints on the fly (e.g., "No weekend shifts") — recalculate and communicate the impact immediately
+
+### Work Package 5: Phase 3 Step 1 & 2 — Free Up Capacity & Recalculate
+
+Build the Ohio order delay logic.
+
+- Query Ohio orders with Low priority and deadline > 6 weeks
+- Calculate capacity freed per delay candidate (Rolling Mill hours, Cutter hours, alloy tons, operator hours) and remaining buffer after delay
+- Agent explains trade-off per candidate with reasoning
+- Handle Planner rejection of a delay — recalculate surplus and communicate downstream impact without restarting
+- Recalculate all capacity dimensions with approved delays removed
+- Show before/after comparison with clear delta and updated bottleneck identification
+
+### Work Package 6: Phase 3 Step 3 — Multi-Constraint Matching Engine (CORE)
+
+This is the highest-priority, highest-effort work package. Build the 4-layer constraint funnel with interactive order-by-order conversation.
+
+- **Layer 1 — Equipment Compatibility:** Check gauge range on Rolling Mill and length range on Cutter. Pass/Fail.
+- **Layer 2 — Raw Material Availability:** Full Match / Partial Match / No Match with lead time + production time vs. deadline calculation
+- **Layer 3 — Machine Utilization:** Check available hours on BOTH Rolling Mill AND Cutter. Running capacity tracker that updates after each order. 90% threshold alerts. Check across shift types (Normal → Overtime → Weekend). Manpower headcount check embedded here.
+- **Layer 4 — Cascade Impact:** Simulate updated schedule after adding the Miami order. Check if any existing Ohio order's slack goes negative (completion pushed past deadline). Flag with specific details.
+- **Interactive conversation flow:** Agent presents one order at a time (priority order), shows all 4 layers, recommends action → Planner approves/skips/rejects → agent updates running state → moves to next order
+- **Handle Planner skip/reorder:** "Skip this, show me the next one" or "Go back to #1055" — agent re-evaluates with current state
+- **What-if support:** Handle questions like "What if I add weekend shifts?" or "What if Miami reopens in 2 weeks?" — agent recalculates and presents updated recommendations
+
+### Work Package 7: Phase 3 Step 4 — Non-Transferable Orders & Communications
+
+- Flag all orders that failed at any constraint layer as Non-Transferable
+- State the specific constraint layer and reason that blocked each order
+- Draft context-aware customer cancellation/delay notices (not generic templates — reference the situation and specific order)
+- Group communications by customer where multiple orders belong to the same customer
+
+### Work Package 8: Phase 4 — Execution
+
+- Create new production orders at Ohio plant (mock write to data store)
+- Generate updated Ohio production schedule reflecting all transfers and delays
+- Create Plant Manager Reallocation Brief (summary of new orders, updated schedule, resource requirements) and send mock notification
+- Draft and queue all customer communications (delay notices for Ohio customers, cancellation notices for non-transferable Miami orders)
+- Generate audit trail summary — every decision, who made it (Planner or AI recommendation), rationale, timestamp
+
+### Work Package 9: Conversational UI
+
+- Build chat interface for agent conversation
+- Embed inline approval buttons (approve/reject/modify) at each human touchpoint
+- Display structured data (tables, running capacity tracker) inline in the chat
+- Add "explain reasoning" expandable sections for each recommendation
+- End-to-end workflow should be navigable through the chat UI with all human touchpoints functional
+
+### Work Package 10: Demo Preparation
+
+- Write demo script aligned to the 5-minute pitch flow
+- Script must include at least: 1 Planner reclassification, 1 delay rejection, 1 order skip, 1 what-if question, 1 cascade impact moment
+- Rehearse end-to-end demo with realistic Planner dialogue
+- Prepare backup slides for edge cases and Q&A
+
+---
+
+## Demo Flow (5-minute pitch)
+
+1. **Phase 0** (20s): AI proactively alerts Planner — tornado detected, orders at risk
+2. **Phase 1** (30s): AI shows prioritized Miami orders. Planner reclassifies one — agent adjusts.
+3. **Phase 2** (30s): AI shows Ohio capacity — *"Rolling Mill is the bottleneck, not the Cutter"*
+4. **Phase 3 — Step 1** (30s): AI identifies Ohio orders to delay. Planner rejects one — agent recalculates.
+5. **Phase 3 — Step 3** (120s — THE MAIN EVENT):
+   - Agent walks through first Critical order — all 4 layers pass — Planner approves
+   - Agent walks through second order — Partial Match on material, Rolling Mill at 97% on normal shifts, suggests overtime — Planner asks "what if I add weekend shifts?" — agent recalculates
+   - Agent walks through third order — gauge out of range — non-transferable
+   - Agent flags cascade risk on fourth order — *"This would push Ohio Order #2025 past its penalty deadline"*
+6. **Phase 3 — Step 4** (20s): Non-transferable orders with reasons, draft customer notices
+7. **Phase 4** (20s): One-click execution, Plant Manager brief sent
+8. **Wrap-up** (20s): "Hours not days" — highlight the 4-layer reasoning, adaptive re-planning, and human-AI collaboration
+
+---
+
+## Key Takeaways for Judges
+
+1. **4-Layer Constraint Funnel** — The AI reasons through equipment compatibility, raw material availability, machine utilization, AND cascade impact simultaneously. This is what production planners do manually over days — the AI does it in minutes.
+2. **Interactive Order-by-Order Matching** — The Planner and AI think together. The Planner steers, the AI reasons. This is genuine human-AI collaboration, not a click-through wizard.
+3. **Adaptive Re-Planning** — When the Planner rejects, skips, or changes constraints, the AI re-optimizes instantly. This is what separates Agentic AI from a workflow engine.
+4. **Cascade Impact Detection** — The AI catches downstream effects that humans miss: "transferring this Miami order will breach an existing Ohio customer's penalty deadline." This is the insight that saves real money.

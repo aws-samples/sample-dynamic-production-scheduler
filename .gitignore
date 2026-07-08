@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+
+# Build artifacts
+*.js.map
+cdk.out/
+dist/
+build/
+*.tsbuildinfo
+
+# Vendored layers
+infrastructure/layers/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python virtual environments
+.venv/
+venv/
+
+# Local environment config (use .env.example as a template)
+.env
+.env.local
+**/.env
+!**/.env.example
+
+# AgentCore deployment state (account-specific)
+.bedrock_agentcore/*/dependencies.zip
+.bedrock_agentcore/*/dependencies.hash
+.bedrock_agentcore.yaml
+*/.bedrock_agentcore.yaml
+
+# Gateway config (account-specific)
+infrastructure/scripts/.gateway-config.json
+
+# Pytest
+.pytest_cache/
+
+# Lock files
+uv.lock

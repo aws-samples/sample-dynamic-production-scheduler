@@ -1,0 +1,259 @@
+image: public.ecr.aws/docker/library/node:22-slim
+
+stages:
+  - build
+  - deploy
+
+variables:
+  AWS_CREDS_TARGET_ROLE: arn:aws:iam::210490146110:role/GitLab
+  AWS_DEFAULT_REGION: us-east-1
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "22"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  npm_config_cache: "$CI_PROJECT_DIR/.cache/npm"
+
+# Reusable templates
+.aws_setup: &aws_setup
+  image: public.ecr.aws/docker/library/python:3.13-slim
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl unzip > /dev/null 2>&1
+    - pip3 install --quiet --no-warn-script-location --root-user-action=ignore awscli boto3
+    - echo "✓ AWS CLI ready ($(aws --version 2>&1 | cut -d' ' -f1))"
+
+.python_setup: &python_setup
+  image: public.ecr.aws/docker/library/python:3.13-slim
+  before_script:
+    - echo "✓ Python $(python3 --version | cut -d' ' -f2) ready"
+
+.node_setup: &node_setup
+  before_script:
+    - echo "✓ Node $(node --version) ready"
+
+.agent_deploy: &agent_deploy
+  stage: deploy
+  <<: *python_setup
+  tags:
+    - arch:amd64
+    - size:medium
+  variables:
+    AWS_CREDS_TARGET_ROLE: arn:aws:iam::210490146110:role/GitLab
+    AWS_DEFAULT_REGION: us-east-1
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl unzip > /dev/null 2>&1
+    - pip3 install --quiet --no-warn-script-location awscli boto3 bedrock-agentcore-starter-toolkit
+  needs:
+    - job: deploy:infrastructure
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - script_failure
+
+# ============================================
+# STAGE: BUILD (Parallel)
+# ============================================
+
+build:frontend:
+  stage: build
+  <<: *node_setup
+  tags:
+    - arch:amd64
+    - size:medium
+  script:
+    - cd frontend-spa
+    - echo "Installing dependencies..."
+    - npm ci --silent
+    - echo "Building frontend..."
+    - npm run build --silent
+    - echo "✓ Frontend build complete"
+  cache:
+    key:
+      files:
+        - frontend-spa/package-lock.json
+      prefix: frontend
+    paths:
+      - frontend-spa/node_modules/
+      - .cache/npm/
+  artifacts:
+    paths:
+      - frontend-spa/dist/
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+build:mcp-lambdas:
+  stage: build
+  <<: *python_setup
+  tags:
+    - arch:amd64
+    - size:large
+  script:
+    - apt-get update -qq && apt-get install -y -qq zip > /dev/null 2>&1
+    - pip3 install --quiet --no-warn-script-location --upgrade pip setuptools wheel
+    - |
+      # Bundle ERP Data MCP
+      echo "Bundling ERP Data MCP..."
+      cd erp-data-mcp
+      mkdir -p .lambda-bundle
+      
+      echo "Installing dependencies..."
+      python3 -m pip install --no-warn-script-location --target .lambda-bundle --platform manylinux2014_x86_64 --only-binary=:all: -r requirements.txt
+      
+      echo "Copying source code..."
+      cp -r src/* .lambda-bundle/
+      
+      echo "✓ ERP Data MCP bundled"
+      cd ..
+      
+      # Bundle Audit MCP
+      echo "Bundling Audit MCP..."
+      cd audit-mcp
+      mkdir -p .lambda-bundle
+      
+      echo "Installing dependencies..."
+      python3 -m pip install --no-warn-script-location --target .lambda-bundle --platform manylinux2014_x86_64 --only-binary=:all: -r requirements.txt
+      
+      echo "Copying source code..."
+      cp -r src/* .lambda-bundle/
+      
+      echo "✓ Audit MCP bundled"
+      cd ..
+  cache:
+    key:
+      files:
+        - erp-data-mcp/requirements.txt
+        - audit-mcp/requirements.txt
+      prefix: mcp-lambdas
+    paths:
+      - .cache/pip/
+  artifacts:
+    paths:
+      - erp-data-mcp/.lambda-bundle/
+      - audit-mcp/.lambda-bundle/
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# ============================================
+# STAGE: DEPLOY
+# ============================================
+
+deploy:infrastructure:
+  stage: deploy
+  image: public.ecr.aws/docker/library/node:22-slim
+  tags:
+    - arch:amd64
+    - size:large
+  variables:
+    AWS_CREDS_TARGET_ROLE: arn:aws:iam::210490146110:role/GitLab
+    AWS_DEFAULT_REGION: us-east-1
+  before_script:
+    # Install Python and AWS CLI in Node container
+    - apt-get update -qq && apt-get install -y -qq curl unzip python3 python3-pip > /dev/null 2>&1
+    - pip3 install --quiet --no-warn-script-location --break-system-packages awscli boto3
+    - node --version
+    - aws --version
+  script:
+    - cd infrastructure
+    - echo "Installing CDK dependencies..."
+    - npm ci --silent
+    - echo "Deploying infrastructure stacks..."
+    - npx cdk deploy --all --require-approval never
+    - echo "✓ Infrastructure deployed"
+  cache:
+    key:
+      files:
+        - infrastructure/package-lock.json
+      prefix: infrastructure
+    paths:
+      - infrastructure/node_modules/
+      - .cache/npm/
+  dependencies:
+    - build:mcp-lambdas
+  needs:
+    - job: build:mcp-lambdas
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+
+deploy:agents:orchestrator:
+  <<: *agent_deploy
+  script:
+    - cd orchestrator-agent
+    - agentcore configure --entrypoint src/orchestrator_agent/agent.py --non-interactive
+    - agentcore deploy --auto-update-on-conflict
+    - echo "✓ Orchestrator agent deployed"
+
+deploy:agents:impact-assessment:
+  <<: *agent_deploy
+  script:
+    - cd impact-assessment-agent
+    - agentcore configure --entrypoint src/impact_assessment_agent/agent.py --non-interactive
+    - agentcore deploy --auto-update-on-conflict
+    - echo "✓ Impact assessment agent deployed"
+
+deploy:agents:capacity-optimization:
+  <<: *agent_deploy
+  script:
+    - cd capacity-optimization-agent
+    - agentcore configure --entrypoint src/capacity_optimization_agent/agent.py --non-interactive
+    - agentcore deploy --auto-update-on-conflict
+    - echo "✓ Capacity optimization agent deployed"
+
+deploy:agents:constraint-matching:
+  <<: *agent_deploy
+  script:
+    - cd constraint-matching-agent
+    - agentcore configure --entrypoint src/constraint_matching_agent/agent.py --non-interactive
+    - agentcore deploy --auto-update-on-conflict
+    - echo "✓ Constraint matching agent deployed"
+
+deploy:frontend:
+  stage: deploy
+  <<: *aws_setup
+  tags:
+    - arch:amd64
+    - size:medium
+  variables:
+    AWS_CREDS_TARGET_ROLE: arn:aws:iam::210490146110:role/GitLab
+    AWS_DEFAULT_REGION: us-east-1
+  script:
+    - |
+      ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      BUCKET_NAME="disruptionai-frontend-${ACCOUNT_ID}"
+      
+      echo "Deploying frontend to S3 bucket: $BUCKET_NAME"
+      aws s3 sync frontend-spa/dist/ s3://${BUCKET_NAME}/ --delete
+      
+      # Get CloudFront distribution ID
+      DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName.contains(@, '${BUCKET_NAME}')]].Id | [0]" --output text)
+      
+      if [ ! -z "$DISTRIBUTION_ID" ]; then
+        echo "Creating CloudFront invalidation for distribution: $DISTRIBUTION_ID"
+        aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+      else
+        echo "Warning: Could not find CloudFront distribution for bucket $BUCKET_NAME"
+      fi
+  dependencies:
+    - build:frontend
+  needs:
+    - job: build:frontend
+      artifacts: true
+    - job: deploy:infrastructure
+    - job: deploy:agents:orchestrator
+    - job: deploy:agents:impact-assessment
+    - job: deploy:agents:capacity-optimization
+    - job: deploy:agents:constraint-matching
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"

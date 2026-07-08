@@ -1,0 +1,8 @@
+{
+  "VITE_API_URL": "https://bejmqlkxoyycumxjgzf4d3yssm0ncpyi.lambda-url.us-east-1.on.aws/",
+  "VITE_USER_POOL_ID": "us-east-1_FyjcuqH7U",
+  "VITE_USER_CLIENT_ID": "6cq7uo1ccsp90cijp43fgndvrn",
+  "VITE_IDENTITY_POOL_ID": "us-east-1:bfc10d4b-c780-4d87-ab74-73306122c02b",
+  "VITE_AWS_REGION": "us-east-1",
+  "_comment": "These are public Cognito identifiers (not secrets). The User Pool Client ID is intentionally public for browser-based auth flows per AWS Cognito design."
+}

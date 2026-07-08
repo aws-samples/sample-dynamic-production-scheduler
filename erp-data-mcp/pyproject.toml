@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "erp-data-mcp"
+version = "0.1.0"
+description = "MCP server providing mock ERP data access for DisruptionAI"
+requires-python = ">=3.11"
+dependencies = [
+    "boto3==1.42.73",
+    "mcp==1.26.0",
+    "pydantic==2.12.5",
+    "pydantic-settings==2.13.1",
+    "python-json-logger==2.0.7",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+erp-data-mcp = "erp_data_mcp.server:main"
+erp-data-mcp-seed = "erp_data_mcp.seed.loader:main"

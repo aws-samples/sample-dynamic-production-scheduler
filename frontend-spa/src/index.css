@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --surface-0: #0f172a;    /* slate-900 — deepest bg */
+    --surface-1: #1e293b;    /* slate-800 — card bg */
+    --surface-2: #334155;    /* slate-700 — elevated */
+    --surface-3: #475569;    /* slate-600 — borders */
+    --text-primary: #f1f5f9; /* slate-100 */
+    --text-secondary: #94a3b8; /* slate-400 */
+    --text-muted: #64748b;   /* slate-500 */
+    --accent: #06b6d4;       /* cyan-500 */
+    --accent-dim: #0e7490;   /* cyan-700 */
+    --accent-glow: rgba(6, 182, 212, 0.15);
+    --success: #10b981;      /* emerald-500 */
+    --warning: #f59e0b;      /* amber-500 */
+    --danger: #ef4444;       /* red-500 */
+    --border: rgba(148, 163, 184, 0.12);
+  }
+
+  html {
+    font-size: 18px; /* Increased from default 16px by 2 points */
+  }
+
+  * {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  code, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply rounded-2xl border border-white/[0.06] bg-slate-800/80 backdrop-blur-sm shadow-lg shadow-black/20;
+  }
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-cyan-500/20 hover:shadow-cyan-500/5;
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent;
+  }
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.1), 0 0 60px rgba(6, 182, 212, 0.05);
+  }
+}
+
+/* Animated flow lines for cascade visualization */
+@keyframes flow-dash {
+  to { stroke-dashoffset: -14; }
+}
+.animate-flow-line {
+  animation: flow-dash 1.2s linear infinite;
+}

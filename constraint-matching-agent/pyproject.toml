@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "constraint-matching-agent"
+version = "0.1.0"
+description = "Constraint Matching Agent for DisruptionAI — 4-layer constraint funnel for Florida order transfer"
+requires-python = ">=3.11"
+dependencies = [
+    "strands-agents==1.32.0",
+    "strands-agents-tools==0.2.23",
+    "pydantic==2.12.5",
+    "pydantic-settings==2.13.1",
+    "python-json-logger==4.0.0",
+    "mcp-proxy-for-aws==1.1.6",
+    "bedrock-agentcore==1.4.7",
+    "boto3==1.42.73",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
