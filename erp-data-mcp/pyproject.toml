@@ -11,7 +11,7 @@ dependencies = [
     "boto3==1.42.73",
     "mcp==1.26.0",
     "pydantic==2.12.5",
-    "pydantic-settings==2.13.1",
+    "pydantic-settings==2.14.2",
     "python-json-logger==2.0.7",
 ]
 

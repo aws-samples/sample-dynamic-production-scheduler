@@ -173,7 +173,7 @@ class PlannerMessage(BaseModel):
         if not v.strip():
             raise ValueError("Message cannot be empty")
         return re.sub(
-            r"<script[^>]*>.*?</script>", "", v, flags=re.IGNORECASE
+            r"<script[^>]*>.*?</script>", "", v, flags=re.IGNORECASE | re.DOTALL
         )
 
 

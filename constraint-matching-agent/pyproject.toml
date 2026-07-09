@@ -11,10 +11,10 @@ dependencies = [
     "strands-agents==1.32.0",
     "strands-agents-tools==0.2.23",
     "pydantic==2.12.5",
-    "pydantic-settings==2.13.1",
+    "pydantic-settings==2.14.2",
     "python-json-logger==4.0.0",
     "mcp-proxy-for-aws==1.1.6",
-    "bedrock-agentcore==1.4.7",
+    "bedrock-agentcore==1.15.1",
     "boto3==1.42.73",
 ]
 

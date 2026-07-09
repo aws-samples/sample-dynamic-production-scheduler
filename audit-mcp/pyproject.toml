@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "mcp==1.26.0",
     "pydantic==2.12.5",
-    "pydantic-settings==2.13.1",
+    "pydantic-settings==2.14.2",
     "boto3==1.42.73",
 ]
 

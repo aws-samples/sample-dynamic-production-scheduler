@@ -80,8 +80,9 @@ function dispatch(msg: ServerMessage): void {
       store.addErrorMessage(text);
     },
   };
-  const handler = handlers[msg.type];
-  if (handler) handler();
+  if (Object.prototype.hasOwnProperty.call(handlers, msg.type)) {
+    handlers[msg.type]();
+  }
 }
 
 function scheduleReconnect(): void {
